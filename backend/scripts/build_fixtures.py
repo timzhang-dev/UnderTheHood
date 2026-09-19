@@ -5,6 +5,16 @@ contract (frontend renders them, backend tests assert on them) and they are
 served for the built-in examples without ever calling the model — so the demo
 path is instant, free, and cannot regress.
 
+Writes to TWO places, on purpose:
+
+  fixtures/                     repo-root copy; the backend test suite reads this
+  frontend/lib/fixtures/        bundler-visible copy
+
+The frontend copy is not a convenience. Next refuses to bundle modules outside
+its project root, and Vercel building from frontend/ would not see ../fixtures
+at all. Rather than a separate sync step that can be forgotten, one generator
+writes both — so they cannot drift.
+
 Run: uv run python scripts/build_fixtures.py
 """
 
@@ -20,7 +30,8 @@ from pydantic import TypeAdapter
 
 from app.models.execution import VisualizeResponse
 
-FIXTURES = Path(__file__).resolve().parents[2] / "fixtures"
+ROOT = Path(__file__).resolve().parents[2]
+OUTPUTS = [ROOT / "fixtures", ROOT / "frontend" / "lib" / "fixtures"]
 
 
 # --- terse builders -------------------------------------------------------
@@ -362,12 +373,14 @@ EXAMPLES = [
 
 def main() -> None:
     adapter = TypeAdapter(VisualizeResponse)
-    FIXTURES.mkdir(exist_ok=True)
     for ex in EXAMPLES:
-        adapter.validate_python(ex["trace"])  # fail loudly before writing
-        path = FIXTURES / f"{ex['id']}.json"
-        path.write_text(json.dumps(ex, indent=2) + "\n")
-        print(f"wrote {path.relative_to(FIXTURES.parent)} ({len(ex['trace']['steps'])} steps)")
+        adapter.validate_python(ex["trace"])  # fail loudly before writing anything
+    for directory in OUTPUTS:
+        directory.mkdir(parents=True, exist_ok=True)
+        for ex in EXAMPLES:
+            path = directory / f"{ex['id']}.json"
+            path.write_text(json.dumps(ex, indent=2) + "\n")
+        print(f"wrote {len(EXAMPLES)} fixtures to {directory.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

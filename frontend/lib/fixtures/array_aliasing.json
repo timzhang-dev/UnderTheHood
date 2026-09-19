@@ -1,0 +1,237 @@
+{
+  "id": "array_aliasing",
+  "title": "Array Aliasing",
+  "teaches": "Arrays are objects, so two variables can share one array.",
+  "source": "public class Main {\n    public static void main(String[] args) {\n        int[] a = {1, 2, 3};\n        int[] b = a;\n\n        b[0] = 10;\n\n        System.out.println(a[0]);\n    }\n}",
+  "trace": {
+    "status": "ok",
+    "steps": [
+      {
+        "step": 1,
+        "line": 3,
+        "source": "        int[] a = {1, 2, 3};",
+        "stackFrames": [
+          {
+            "name": "main",
+            "variables": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "reference",
+                  "type": "int[]",
+                  "target": "obj_1"
+                }
+              }
+            ]
+          }
+        ],
+        "heap": [
+          {
+            "kind": "array",
+            "id": "obj_1",
+            "type": "int[]",
+            "elements": [
+              {
+                "kind": "primitive",
+                "type": "int",
+                "value": 1
+              },
+              {
+                "kind": "primitive",
+                "type": "int",
+                "value": 2
+              },
+              {
+                "kind": "primitive",
+                "type": "int",
+                "value": 3
+              }
+            ]
+          }
+        ],
+        "stdout": [],
+        "explanation": "Arrays are objects in Java. The array lives on the heap, and a holds a reference to it.",
+        "changed": {
+          "kind": "variable",
+          "frame": 0,
+          "name": "a"
+        }
+      },
+      {
+        "step": 2,
+        "line": 4,
+        "source": "        int[] b = a;",
+        "stackFrames": [
+          {
+            "name": "main",
+            "variables": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "reference",
+                  "type": "int[]",
+                  "target": "obj_1"
+                }
+              },
+              {
+                "name": "b",
+                "value": {
+                  "kind": "reference",
+                  "type": "int[]",
+                  "target": "obj_1"
+                }
+              }
+            ]
+          }
+        ],
+        "heap": [
+          {
+            "kind": "array",
+            "id": "obj_1",
+            "type": "int[]",
+            "elements": [
+              {
+                "kind": "primitive",
+                "type": "int",
+                "value": 1
+              },
+              {
+                "kind": "primitive",
+                "type": "int",
+                "value": 2
+              },
+              {
+                "kind": "primitive",
+                "type": "int",
+                "value": 3
+              }
+            ]
+          }
+        ],
+        "stdout": [],
+        "explanation": "b = a copies the reference. The array itself is NOT copied \u2014 there is still exactly one array.",
+        "changed": {
+          "kind": "variable",
+          "frame": 0,
+          "name": "b"
+        }
+      },
+      {
+        "step": 3,
+        "line": 6,
+        "source": "        b[0] = 10;",
+        "stackFrames": [
+          {
+            "name": "main",
+            "variables": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "reference",
+                  "type": "int[]",
+                  "target": "obj_1"
+                }
+              },
+              {
+                "name": "b",
+                "value": {
+                  "kind": "reference",
+                  "type": "int[]",
+                  "target": "obj_1"
+                }
+              }
+            ]
+          }
+        ],
+        "heap": [
+          {
+            "kind": "array",
+            "id": "obj_1",
+            "type": "int[]",
+            "elements": [
+              {
+                "kind": "primitive",
+                "type": "int",
+                "value": 10
+              },
+              {
+                "kind": "primitive",
+                "type": "int",
+                "value": 2
+              },
+              {
+                "kind": "primitive",
+                "type": "int",
+                "value": 3
+              }
+            ]
+          }
+        ],
+        "stdout": [],
+        "explanation": "Writing to b[0] changes slot 0 of the one shared array to 10.",
+        "changed": {
+          "kind": "element",
+          "id": "obj_1",
+          "index": 0
+        }
+      },
+      {
+        "step": 4,
+        "line": 8,
+        "source": "        System.out.println(a[0]);",
+        "stackFrames": [
+          {
+            "name": "main",
+            "variables": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "reference",
+                  "type": "int[]",
+                  "target": "obj_1"
+                }
+              },
+              {
+                "name": "b",
+                "value": {
+                  "kind": "reference",
+                  "type": "int[]",
+                  "target": "obj_1"
+                }
+              }
+            ]
+          }
+        ],
+        "heap": [
+          {
+            "kind": "array",
+            "id": "obj_1",
+            "type": "int[]",
+            "elements": [
+              {
+                "kind": "primitive",
+                "type": "int",
+                "value": 10
+              },
+              {
+                "kind": "primitive",
+                "type": "int",
+                "value": 2
+              },
+              {
+                "kind": "primitive",
+                "type": "int",
+                "value": 3
+              }
+            ]
+          }
+        ],
+        "stdout": [
+          "10"
+        ],
+        "explanation": "a[0] prints 10. a and b are two references to the same array, so a change through one is visible through the other.",
+        "changed": null
+      }
+    ]
+  }
+}

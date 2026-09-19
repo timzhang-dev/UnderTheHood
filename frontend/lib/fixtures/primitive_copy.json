@@ -1,0 +1,180 @@
+{
+  "id": "primitive_copy",
+  "title": "Primitive Copy",
+  "teaches": "Assigning a primitive copies the value.",
+  "source": "public class Main {\n    public static void main(String[] args) {\n        int x = 5;\n        int y = x;\n        y = 10;\n\n        System.out.println(x);\n        System.out.println(y);\n    }\n}",
+  "trace": {
+    "status": "ok",
+    "steps": [
+      {
+        "step": 1,
+        "line": 3,
+        "source": "        int x = 5;",
+        "stackFrames": [
+          {
+            "name": "main",
+            "variables": [
+              {
+                "name": "x",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 5
+                }
+              }
+            ]
+          }
+        ],
+        "heap": [],
+        "stdout": [],
+        "explanation": "The variable x is created on the stack and holds the value 5 directly. Primitives store their value, not a reference.",
+        "changed": {
+          "kind": "variable",
+          "frame": 0,
+          "name": "x"
+        }
+      },
+      {
+        "step": 2,
+        "line": 4,
+        "source": "        int y = x;",
+        "stackFrames": [
+          {
+            "name": "main",
+            "variables": [
+              {
+                "name": "x",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 5
+                }
+              },
+              {
+                "name": "y",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 5
+                }
+              }
+            ]
+          }
+        ],
+        "heap": [],
+        "stdout": [],
+        "explanation": "y is created and given a COPY of x's value. There are now two independent 5s on the stack.",
+        "changed": {
+          "kind": "variable",
+          "frame": 0,
+          "name": "y"
+        }
+      },
+      {
+        "step": 3,
+        "line": 5,
+        "source": "        y = 10;",
+        "stackFrames": [
+          {
+            "name": "main",
+            "variables": [
+              {
+                "name": "x",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 5
+                }
+              },
+              {
+                "name": "y",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 10
+                }
+              }
+            ]
+          }
+        ],
+        "heap": [],
+        "stdout": [],
+        "explanation": "y is changed to 10. x is untouched, because y only ever held a copy \u2014 the two variables were never linked.",
+        "changed": {
+          "kind": "variable",
+          "frame": 0,
+          "name": "y"
+        }
+      },
+      {
+        "step": 4,
+        "line": 7,
+        "source": "        System.out.println(x);",
+        "stackFrames": [
+          {
+            "name": "main",
+            "variables": [
+              {
+                "name": "x",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 5
+                }
+              },
+              {
+                "name": "y",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 10
+                }
+              }
+            ]
+          }
+        ],
+        "heap": [],
+        "stdout": [
+          "5"
+        ],
+        "explanation": "Printing x gives 5. Assigning to y never affected it.",
+        "changed": null
+      },
+      {
+        "step": 5,
+        "line": 8,
+        "source": "        System.out.println(y);",
+        "stackFrames": [
+          {
+            "name": "main",
+            "variables": [
+              {
+                "name": "x",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 5
+                }
+              },
+              {
+                "name": "y",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 10
+                }
+              }
+            ]
+          }
+        ],
+        "heap": [],
+        "stdout": [
+          "5",
+          "10"
+        ],
+        "explanation": "Printing y gives 10. Each primitive variable holds its own separate value.",
+        "changed": null
+      }
+    ]
+  }
+}
