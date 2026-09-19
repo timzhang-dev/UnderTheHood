@@ -1,0 +1,254 @@
+{
+  "id": "independent_objects",
+  "title": "Independent Objects",
+  "teaches": "Two `new` calls make two objects \u2014 contrast with aliasing.",
+  "source": "class MyData {\n    int value;\n\n    MyData(int value) {\n        this.value = value;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        MyData a = new MyData(1);\n        MyData b = new MyData(1);\n\n        b.value = 5;\n\n        System.out.println(a.value);\n    }\n}",
+  "trace": {
+    "status": "ok",
+    "steps": [
+      {
+        "step": 1,
+        "line": 11,
+        "source": "        MyData a = new MyData(1);",
+        "stackFrames": [
+          {
+            "name": "main",
+            "variables": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "reference",
+                  "type": "MyData",
+                  "target": "obj_1"
+                }
+              }
+            ]
+          }
+        ],
+        "heap": [
+          {
+            "kind": "object",
+            "id": "obj_1",
+            "type": "MyData",
+            "fields": [
+              {
+                "name": "value",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 1
+                }
+              }
+            ]
+          }
+        ],
+        "stdout": [],
+        "explanation": "The first MyData object is created, and a references it.",
+        "changed": {
+          "kind": "variable",
+          "frame": 0,
+          "name": "a"
+        }
+      },
+      {
+        "step": 2,
+        "line": 12,
+        "source": "        MyData b = new MyData(1);",
+        "stackFrames": [
+          {
+            "name": "main",
+            "variables": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "reference",
+                  "type": "MyData",
+                  "target": "obj_1"
+                }
+              },
+              {
+                "name": "b",
+                "value": {
+                  "kind": "reference",
+                  "type": "MyData",
+                  "target": "obj_2"
+                }
+              }
+            ]
+          }
+        ],
+        "heap": [
+          {
+            "kind": "object",
+            "id": "obj_1",
+            "type": "MyData",
+            "fields": [
+              {
+                "name": "value",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 1
+                }
+              }
+            ]
+          },
+          {
+            "kind": "object",
+            "id": "obj_2",
+            "type": "MyData",
+            "fields": [
+              {
+                "name": "value",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 1
+                }
+              }
+            ]
+          }
+        ],
+        "stdout": [],
+        "explanation": "`new` runs a second time, so a SECOND object appears on the heap. Equal contents, but a separate object \u2014 b points to obj_2.",
+        "changed": {
+          "kind": "variable",
+          "frame": 0,
+          "name": "b"
+        }
+      },
+      {
+        "step": 3,
+        "line": 14,
+        "source": "        b.value = 5;",
+        "stackFrames": [
+          {
+            "name": "main",
+            "variables": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "reference",
+                  "type": "MyData",
+                  "target": "obj_1"
+                }
+              },
+              {
+                "name": "b",
+                "value": {
+                  "kind": "reference",
+                  "type": "MyData",
+                  "target": "obj_2"
+                }
+              }
+            ]
+          }
+        ],
+        "heap": [
+          {
+            "kind": "object",
+            "id": "obj_1",
+            "type": "MyData",
+            "fields": [
+              {
+                "name": "value",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 1
+                }
+              }
+            ]
+          },
+          {
+            "kind": "object",
+            "id": "obj_2",
+            "type": "MyData",
+            "fields": [
+              {
+                "name": "value",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 5
+                }
+              }
+            ]
+          }
+        ],
+        "stdout": [],
+        "explanation": "Only obj_2 is modified. obj_1 is a different object and is unaffected.",
+        "changed": {
+          "kind": "field",
+          "id": "obj_2",
+          "field": "value"
+        }
+      },
+      {
+        "step": 4,
+        "line": 16,
+        "source": "        System.out.println(a.value);",
+        "stackFrames": [
+          {
+            "name": "main",
+            "variables": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "reference",
+                  "type": "MyData",
+                  "target": "obj_1"
+                }
+              },
+              {
+                "name": "b",
+                "value": {
+                  "kind": "reference",
+                  "type": "MyData",
+                  "target": "obj_2"
+                }
+              }
+            ]
+          }
+        ],
+        "heap": [
+          {
+            "kind": "object",
+            "id": "obj_1",
+            "type": "MyData",
+            "fields": [
+              {
+                "name": "value",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 1
+                }
+              }
+            ]
+          },
+          {
+            "kind": "object",
+            "id": "obj_2",
+            "type": "MyData",
+            "fields": [
+              {
+                "name": "value",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 5
+                }
+              }
+            ]
+          }
+        ],
+        "stdout": [
+          "1"
+        ],
+        "explanation": "This prints 1. Compare with the aliasing example, where the same code printed 5 \u2014 the difference is one `new`.",
+        "changed": null
+      }
+    ]
+  }
+}
