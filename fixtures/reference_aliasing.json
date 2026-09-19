@@ -1,0 +1,209 @@
+{
+  "id": "reference_aliasing",
+  "title": "Reference Aliasing",
+  "teaches": "Assigning a reference copies the reference, not the object.",
+  "source": "class MyData {\n    int value;\n\n    MyData(int value) {\n        this.value = value;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        MyData a = new MyData(1);\n        MyData b = a;\n\n        b.value = 5;\n\n        System.out.println(a.value);\n    }\n}",
+  "trace": {
+    "status": "ok",
+    "steps": [
+      {
+        "step": 1,
+        "line": 11,
+        "source": "        MyData a = new MyData(1);",
+        "stackFrames": [
+          {
+            "name": "main",
+            "variables": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "reference",
+                  "type": "MyData",
+                  "target": "obj_1"
+                }
+              }
+            ]
+          }
+        ],
+        "heap": [
+          {
+            "kind": "object",
+            "id": "obj_1",
+            "type": "MyData",
+            "fields": [
+              {
+                "name": "value",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 1
+                }
+              }
+            ]
+          }
+        ],
+        "stdout": [],
+        "explanation": "A new MyData object is created on the heap. The variable a does NOT contain the object \u2014 it holds a reference pointing to it.",
+        "changed": {
+          "kind": "variable",
+          "frame": 0,
+          "name": "a"
+        }
+      },
+      {
+        "step": 2,
+        "line": 12,
+        "source": "        MyData b = a;",
+        "stackFrames": [
+          {
+            "name": "main",
+            "variables": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "reference",
+                  "type": "MyData",
+                  "target": "obj_1"
+                }
+              },
+              {
+                "name": "b",
+                "value": {
+                  "kind": "reference",
+                  "type": "MyData",
+                  "target": "obj_1"
+                }
+              }
+            ]
+          }
+        ],
+        "heap": [
+          {
+            "kind": "object",
+            "id": "obj_1",
+            "type": "MyData",
+            "fields": [
+              {
+                "name": "value",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 1
+                }
+              }
+            ]
+          }
+        ],
+        "stdout": [],
+        "explanation": "b = a copies the REFERENCE, not the object. No new object is created \u2014 a and b now both point at the same obj_1.",
+        "changed": {
+          "kind": "variable",
+          "frame": 0,
+          "name": "b"
+        }
+      },
+      {
+        "step": 3,
+        "line": 14,
+        "source": "        b.value = 5;",
+        "stackFrames": [
+          {
+            "name": "main",
+            "variables": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "reference",
+                  "type": "MyData",
+                  "target": "obj_1"
+                }
+              },
+              {
+                "name": "b",
+                "value": {
+                  "kind": "reference",
+                  "type": "MyData",
+                  "target": "obj_1"
+                }
+              }
+            ]
+          }
+        ],
+        "heap": [
+          {
+            "kind": "object",
+            "id": "obj_1",
+            "type": "MyData",
+            "fields": [
+              {
+                "name": "value",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 5
+                }
+              }
+            ]
+          }
+        ],
+        "stdout": [],
+        "explanation": "Following b's reference leads to obj_1, and its value field becomes 5. Because a points to that same object, a.value changed too.",
+        "changed": {
+          "kind": "field",
+          "id": "obj_1",
+          "field": "value"
+        }
+      },
+      {
+        "step": 4,
+        "line": 16,
+        "source": "        System.out.println(a.value);",
+        "stackFrames": [
+          {
+            "name": "main",
+            "variables": [
+              {
+                "name": "a",
+                "value": {
+                  "kind": "reference",
+                  "type": "MyData",
+                  "target": "obj_1"
+                }
+              },
+              {
+                "name": "b",
+                "value": {
+                  "kind": "reference",
+                  "type": "MyData",
+                  "target": "obj_1"
+                }
+              }
+            ]
+          }
+        ],
+        "heap": [
+          {
+            "kind": "object",
+            "id": "obj_1",
+            "type": "MyData",
+            "fields": [
+              {
+                "name": "value",
+                "value": {
+                  "kind": "primitive",
+                  "type": "int",
+                  "value": 5
+                }
+              }
+            ]
+          }
+        ],
+        "stdout": [
+          "5"
+        ],
+        "explanation": "This prints 5, not 1. We only ever assigned through b \u2014 but a and b are two names for one object.",
+        "changed": null
+      }
+    ]
+  }
+}
