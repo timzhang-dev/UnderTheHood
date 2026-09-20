@@ -3,7 +3,8 @@ the worked example, the line numbering, and the repair message."""
 
 from __future__ import annotations
 
-from app.models.execution import STEP_CAP, TraceOk
+from app.models.execution import STEP_CAP, TraceOk, TraceUnsupported
+from app.services.llm import ModelOutput
 from app.prompts.execution_trace import (
     EXAMPLE_SOURCE,
     EXAMPLE_TRACE,
@@ -22,6 +23,17 @@ def test_worked_example_is_a_valid_trace():
     """If the schema or validator changes, the example in the prompt must not go stale."""
     trace = TraceOk.model_validate(EXAMPLE_TRACE)
     assert validate_trace(trace.steps, EXAMPLE_SOURCE) == []
+
+
+def test_prompt_examples_match_the_shape_the_model_is_actually_asked_for():
+    """The model must return {"result": ...}; an example showing a bare trace would contradict the schema."""
+    ok_json = SYSTEM_PROMPT.split("Output:\n", 1)[1]
+    ok = ModelOutput.model_validate_json(ok_json).result
+    assert isinstance(ok, TraceOk)
+    assert validate_trace(ok.steps, EXAMPLE_SOURCE) == []
+
+    unsupported_json = SYSTEM_PROMPT.split("Example:\n", 1)[1].split("\n\n", 1)[0]
+    assert isinstance(ModelOutput.model_validate_json(unsupported_json).result, TraceUnsupported)
 
 
 def test_worked_example_teaches_reassignment_not_a_duplicate_object():
