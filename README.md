@@ -1,10 +1,10 @@
 # UnderTheHood
 
-**See what your Java code is actually doing.**
+**Visualize what your Java code is actually doing.**
 
 **Live:** https://tryunderthehood.vercel.app/
 
-ExplainMyCode helps beginner Java students understand program execution. Paste a small Java
+UnderTheHood helps Java students visualize program execution. Paste a small Java
 program, click **Visualize Code**, and step through it line by line while the page shows the
 stack, the heap, references between them, arrays, stdout, and a short explanation of each step.
 
