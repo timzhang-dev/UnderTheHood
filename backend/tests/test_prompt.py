@@ -91,6 +91,13 @@ def test_system_prompt_states_the_step_cap_and_every_unsupported_feature():
         assert feature in SYSTEM_PROMPT
 
 
+def test_instance_methods_are_supported_and_this_is_explained():
+    """Scope decision: methods called on an object are in V1, so they must not be on the decline list."""
+    assert not any("instance method" in feature for feature in UNSUPPORTED)
+    assert "called on an object" in SYSTEM_PROMPT
+    assert "`this` as the FIRST variable" in SYSTEM_PROMPT
+
+
 def test_repair_message_lists_every_error_verbatim():
     errors = ["step 2: a points to 'obj_9', which is not on the heap.", "step 3: stdout shrank."]
     message = build_repair_message(errors)

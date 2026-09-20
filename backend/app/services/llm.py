@@ -47,11 +47,27 @@ class ModelOutput(Strict):
 
 
 class TraceServiceError(Exception):
-    """The service could not reach or use the model. The message is safe to show."""
+    """The service could not reach or use the model. The message is safe to show.
+
+    `retryable` says whether trying again could help (busy, network, 5xx) as opposed to a
+    problem that will repeat (bad key, rejected request). The eval runner backs off on it.
+    """
+
+    def __init__(self, message: str, *, retryable: bool = False):
+        super().__init__(message)
+        self.retryable = retryable
 
 
 class UnusableOutput(Exception):
-    """The model responded, but not with a trace we can use."""
+    """The model responded, but not with a trace we can use.
+
+    `kind` is "refusal" when the model declined to answer at all, else "unparseable",
+    which with strict structured output realistically means it was cut off at max_tokens.
+    """
+
+    def __init__(self, message: str, *, kind: str = "unparseable"):
+        super().__init__(message)
+        self.kind = kind
 
 
 @dataclass
@@ -61,6 +77,7 @@ class Reply:
     stop_reason: str | None
     usage: Any
     request_id: str | None
+    model: str | None  # the model that actually served the request, from the response
 
 
 @functools.lru_cache(maxsize=1)
@@ -103,17 +120,19 @@ def ask(messages: list[dict], *, client: anthropic.Anthropic | None = None, mode
         raise TraceServiceError("The server's API key was rejected.") from exc
     except anthropic.RateLimitError as exc:
         log.warning("Anthropic rate limit: %s", exc.message)
-        raise TraceServiceError("The service is busy right now. Please try again in a moment.") from exc
+        raise TraceServiceError("The service is busy right now. Please try again in a moment.", retryable=True) from exc
     except anthropic.BadRequestError as exc:
         # A bug on our side (schema, beta flag), never the student's input.
         log.error("Anthropic rejected the request: %s", exc.message)
         raise TraceServiceError("The request to the model was rejected. This is a server problem.") from exc
     except anthropic.APIStatusError as exc:
         log.error("Anthropic API error %s: %s", exc.status_code, exc.message)
-        raise TraceServiceError("The model service had a problem. Please try again.") from exc
+        raise TraceServiceError(
+            "The model service had a problem. Please try again.", retryable=exc.status_code >= 500
+        ) from exc
     except anthropic.APIConnectionError as exc:
         log.error("Could not reach Anthropic: %s", exc)
-        raise TraceServiceError("Couldn't reach the model service. Please try again.") from exc
+        raise TraceServiceError("Couldn't reach the model service. Please try again.", retryable=True) from exc
     except TypeError as exc:
         # With no credential at all the SDK raises a bare TypeError, not AuthenticationError.
         if "authentication" not in str(exc).lower():
@@ -126,7 +145,10 @@ def ask(messages: list[dict], *, client: anthropic.Anthropic | None = None, mode
         raise UnusableOutput(f"output could not be parsed: {exc}") from exc
 
     if response.stop_reason == "refusal" or response.parsed_output is None:
-        raise UnusableOutput(f"no usable output (stop_reason={response.stop_reason})")
+        raise UnusableOutput(
+            f"no usable output (stop_reason={response.stop_reason})",
+            kind="refusal" if response.stop_reason == "refusal" else "unparseable",
+        )
 
     raw = "".join(block.text for block in response.content if block.type == "text")
     return Reply(
@@ -135,4 +157,5 @@ def ask(messages: list[dict], *, client: anthropic.Anthropic | None = None, mode
         stop_reason=response.stop_reason,
         usage=response.usage,
         request_id=response._request_id,
+        model=response.model,
     )

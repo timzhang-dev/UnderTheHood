@@ -6,7 +6,7 @@ import pytest
 
 from app.models.execution import TraceOk, TraceUnsupported
 from app.services.llm import ModelOutput, UnusableOutput
-from app.services.trace_generator import MAX_CODE_CHARS, generate_trace, precheck
+from app.services.trace_generator import MAX_CODE_CHARS, generate, generate_trace, precheck
 from tests.conftest import load
 from tests.fakes import FakeClient
 
@@ -106,3 +106,36 @@ def test_unparseable_output_becomes_unsupported_without_a_pointless_retry():
     assert isinstance(result, TraceUnsupported)
     assert "too long or complicated" in result.message
     assert len(client.calls) == 1
+
+
+# --- generate(): the same flow, with a report of what happened -------------------------------------
+
+
+def test_generate_reports_every_attempt_and_what_the_validator_said():
+    source, trace = load("array_aliasing")
+
+    gen = generate(source, client=FakeClient(broken(trace), trace))
+
+    assert gen.result == trace and not gen.prechecked
+    assert len(gen.attempts) == 2
+    assert gen.attempts[0].validation_errors and gen.attempts[1].validation_errors == []
+    assert all(a.reply is not None and a.latency_s >= 0 for a in gen.attempts)
+
+
+def test_generate_marks_answers_that_needed_no_model_call():
+    gen = generate("int x = 5;", client=FakeClient())
+    assert gen.prechecked and gen.attempts == []
+
+
+def test_generate_records_an_attempt_that_returned_nothing_usable():
+    source, _ = load("array_aliasing")
+
+    gen = generate(source, client=FakeClient(ValueError("cut off")))
+
+    (attempt,) = gen.attempts
+    assert attempt.reply is None and attempt.unusable.kind == "unparseable"
+
+
+def test_generate_trace_is_exactly_generate_result():
+    source, trace = load("array_aliasing")
+    assert generate_trace(source, client=FakeClient(trace)) == generate(source, client=FakeClient(trace)).result

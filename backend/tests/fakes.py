@@ -7,13 +7,14 @@ from types import SimpleNamespace
 from app.services.llm import ModelOutput
 
 
-def reply_for(result, stop_reason: str = "end_turn") -> SimpleNamespace:
+def reply_for(result, stop_reason: str = "end_turn", model: str = "claude-opus-5") -> SimpleNamespace:
     """What `messages.parse` returns for a model answer, as far as llm.ask reads it."""
     output = ModelOutput(result=result)
     return SimpleNamespace(
         parsed_output=output,
         content=[SimpleNamespace(type="text", text=output.model_dump_json())],
         stop_reason=stop_reason,
+        model=model,
         usage=SimpleNamespace(
             input_tokens=10, output_tokens=20, cache_creation_input_tokens=0, cache_read_input_tokens=0
         ),

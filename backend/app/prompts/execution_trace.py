@@ -34,14 +34,13 @@ SUPPORTED = [
     "reference assignment, aliasing, and null",
     "System.out.println",
     "if / else, for and while loops (including break and continue)",
-    "static methods declared in the same file",
+    "methods declared in the same file: static methods, and instance methods called on an object (constructors too)",
 ]
 
 UNSUPPORTED = [
     "generics and the collections library (ArrayList, HashMap, ...)",
     "lambdas, streams, inner classes and anonymous classes",
     "inheritance, interfaces, abstract classes and polymorphism",
-    "instance methods (methods called on an object); constructors are fine",
     "multi-dimensional arrays",
     "String methods, and any library call other than System.out.println (Math, Scanner, Random, Integer.parseInt, ...)",
     "System.out.print and printf; only println is supported",
@@ -203,14 +202,14 @@ _SCOPE = (
     "## Scope\n\n"
     "Supported:\n" + _bullets(SUPPORTED) + "\n\n"
     "Not supported (return an unsupported response, see below):\n" + _bullets(UNSUPPORTED) + "\n\n"
-    "V1 traces complete programs: a class containing `public static void main(String[] args)`, plus any helper classes and static methods in the same file. Execution begins at main. "
+    "V1 traces complete programs: a class containing `public static void main(String[] args)`, plus any helper classes and their methods in the same file. Execution begins at main. "
     "Code that is only a few statements with no class and no main method is a bare snippet: it is not supported."
 )
 
 _STEPS = f"""\
 ## What counts as a step
 
-Emit one step per executed statement, in execution order, in main and in any static methods it calls. The state in a step is the state AFTER that line has finished.
+Emit one step per executed statement, in execution order, in main and in any methods it calls. The state in a step is the state AFTER that line has finished.
 
 Do not emit steps for class or method headers, closing braces, blank lines, comments, or a declaration without an initializer (`int x;`). A variable joins the frame at the first step where it has a value.
 
@@ -222,8 +221,9 @@ Control flow:
 - for (init; cond; update): the first step is the init, and its explanation also reports the first condition check. After each pass through the body, one step on the `for` line shows the update and the condition result ("i became 2; 2 < 3 is true, so the loop runs again"). The last such step shows the loop ending.
 - Variables declared inside a block or loop body leave the frame when that block ends.
 
-Static methods:
-- A call pushes a new frame on the end of stackFrames (index 0 is always main; the last frame is the one executing). The first step inside the method shows the new frame with its parameters bound to the argument values: primitives are copied, and references are copied so caller and callee share the same object.
+Methods (static ones, and ones called on an object):
+- A call pushes a new frame on the end of stackFrames (index 0 is always main; the last frame is the one executing). The first step inside the method shows the new frame with its parameters bound to the argument values: primitives are copied, and references are copied so caller and callee share the same object. The frame is named after the method.
+- A method called on an object also has `this` as the FIRST variable in its frame: a reference to that object (the same id the caller's variable holds). A bare field name inside the method, like `count = count + 1;`, means `this.count`: it changes that object's field, and `changed` marks that field.
 - A `return` line gets its own step, with the returning frame still on the stack.
 - The next step is on the caller's line, with the frame popped, showing the effect of the call there (a variable assigned, a value printed). Emit this step even when the method returned nothing.
 
