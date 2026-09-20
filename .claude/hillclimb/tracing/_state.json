@@ -1,0 +1,50 @@
+{
+  "flow": "tracing",
+  "description": "Java source -> validated execution trace, through app.services.trace_generator.generate",
+  "metrics": [
+    {
+      "id": "correct",
+      "label": "correct",
+      "kind": "binary"
+    },
+    {
+      "id": "first_try",
+      "label": "first try",
+      "kind": "binary"
+    },
+    {
+      "id": "refused",
+      "label": "refused",
+      "kind": "binary",
+      "better": "lower"
+    }
+  ],
+  "perf_fields": [
+    {
+      "id": "latency_s",
+      "label": "latency",
+      "unit": "s"
+    },
+    {
+      "id": "attempts",
+      "label": "attempts"
+    },
+    {
+      "id": "steps",
+      "label": "steps"
+    }
+  ],
+  "prices": {
+    "claude-opus-5": {
+      "in": 5.0,
+      "out": 25.0
+    }
+  },
+  "harness_paths": [
+    "evals/cases.py",
+    "evals/facts.py",
+    "evals/grade.py",
+    "evals/gold.json"
+  ],
+  "harness_sha": "0d82aa3683fac02113ed91c10e566b282ade333c9485d5fffe5f0ca50ba26f6a"
+}

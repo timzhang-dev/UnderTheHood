@@ -7,3 +7,9 @@ node_modules/
 .env
 .env.local
 .DS_Store
+
+# Trace eval: derived output. Inputs, results.jsonl and _state.json stay tracked.
+.claude/hillclimb/**/traces/
+.claude/hillclimb/**/report.html
+.claude/hillclimb/**/trajectory/
+.claude/hillclimb/**/state.json

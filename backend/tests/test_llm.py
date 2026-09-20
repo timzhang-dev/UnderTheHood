@@ -105,3 +105,35 @@ def test_a_refusal_is_unusable():
     refused = SimpleNamespace(parsed_output=None, content=[], stop_reason="refusal", usage=None, _request_id="r")
     with pytest.raises(UnusableOutput, match="refusal"):
         ask(MESSAGES, client=FakeClient(refused))
+
+
+def test_unusable_output_says_whether_it_was_a_refusal_or_a_cut_off_answer():
+    refused = SimpleNamespace(parsed_output=None, content=[], stop_reason="refusal", usage=None, _request_id="r")
+    empty = SimpleNamespace(parsed_output=None, content=[], stop_reason="max_tokens", usage=None, _request_id="r")
+    for scripted, kind in [(refused, "refusal"), (empty, "unparseable"), (ValueError("cut off"), "unparseable")]:
+        with pytest.raises(UnusableOutput) as info:
+            ask(MESSAGES, client=FakeClient(scripted))
+        assert info.value.kind == kind
+
+
+@pytest.mark.parametrize(
+    "error, retryable",
+    [
+        (status_error(anthropic.RateLimitError, 429), True),
+        (status_error(anthropic.InternalServerError, 500), True),
+        (anthropic.APIConnectionError(request=REQUEST), True),
+        (status_error(anthropic.AuthenticationError, 401), False),
+        (status_error(anthropic.BadRequestError, 400), False),
+        (status_error(anthropic.PermissionDeniedError, 403), False),
+        (TypeError('"Could not resolve authentication method."'), False),
+    ],
+)
+def test_only_failures_that_can_clear_up_are_marked_retryable(error, retryable):
+    with pytest.raises(TraceServiceError) as info:
+        ask(MESSAGES, client=FakeClient(error))
+    assert info.value.retryable is retryable
+
+
+def test_the_reply_carries_the_model_that_actually_served_the_request():
+    _, trace = load("array_aliasing")
+    assert ask(MESSAGES, client=FakeClient(reply_for(trace, model="claude-opus-5-20260901"))).model == "claude-opus-5-20260901"
