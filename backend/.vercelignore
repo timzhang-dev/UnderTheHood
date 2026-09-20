@@ -1,0 +1,10 @@
+# Not imported by the app: keep them out of the function bundle.
+evals/
+tests/
+scripts/
+.pytest_cache/
+
+# Belt and braces. `.env` holds a real key and is gitignored, so a git-based
+# deploy never sees it -- but `vercel deploy` from this directory uploads the
+# working tree, and would.
+.env
