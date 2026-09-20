@@ -1,4 +1,4 @@
-# UnderTheHood — ExplainMyCode
+# UnderTheHood
 
 **See what your Java code is actually doing.**
 
