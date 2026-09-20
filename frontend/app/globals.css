@@ -1,26 +1,217 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * ExplainMyCode design tokens.
+ *
+ * Three rules hold the whole system together:
+ *
+ *   1. ACCENT (indigo) means "this is where execution is". Active line, focus
+ *      ring, primary action. Nothing else may wear it.
+ *   2. MUTATION (amber) means "this value just changed". It is the only warm
+ *      colour in the interface, which is what makes a mutation catch the eye.
+ *   3. IDENTITY hues (see lib/colors.ts) mean "this is object N". They appear
+ *      only as tints — never as a solid fill — so object identity can never be
+ *      confused with an action or with execution position.
+ *
+ * Everything else is neutral. If a new colour is needed, it almost certainly
+ * belongs to one of the three meanings above.
+ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SF Mono",
+    "SFMono-Regular", Menlo, monospace;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Neutral foundation. Very slightly cool, never pure grey. */
+  --color-canvas: #f6f6f8;
+  --color-surface: #ffffff;
+  --color-sunken: #f3f3f6;
+  --color-line: #e4e4eb;
+  --color-line-strong: #d2d2dd;
+  --color-ink: #15151c;
+  --color-ink-muted: #56565f;
+  --color-ink-faint: #8a8a96;
+
+  /* Execution. */
+  --color-accent: #4f46e5;
+  --color-accent-hover: #433cd0;
+  --color-accent-soft: #eef0fe;
+  --color-accent-line: #c9cbf8;
+  --color-accent-ink: #3730a3;
+
+  /* Mutation. */
+  --color-mutation: #d97706;
+  --color-mutation-soft: #fef6e7;
+  --color-mutation-line: #f3d9a4;
+
+  /* Unsupported / error. */
+  --color-danger: #c2410c;
+  --color-danger-soft: #fef4f0;
+  --color-danger-line: #f5cdb9;
+
+  /* Syntax + value tokens. Deliberately three hues, shared between the code
+     panel and ValueChip so a literal reads identically in both places. */
+  --color-code-keyword: #8250df;
+  --color-code-type: #0a57c2;
+  --color-code-string: #0a7d55;
+  --color-code-comment: #8a8a96;
+
+  /* Terminal. */
+  --color-term-bg: #14141a;
+  --color-term-line: #2a2a34;
+  --color-term-text: #7ee2b0;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
+}
+
+/* --------------------------------------------------------------- primitives */
+
+/* One panel treatment, used by every surface in the app. Panels are meant to
+   read as parts of one instrument, not as a pile of unrelated cards. */
+.panel {
+  @apply overflow-hidden rounded-[10px] border border-line bg-surface;
+}
+
+.panel-head {
+  @apply flex items-center justify-between gap-3 border-b border-line bg-sunken/70 px-3.5 py-2;
+}
+
+/* Small-caps label. Used for panel headers and for the Stack/Heap/Output
+   section headings, so every label in the product has one voice. */
+.label {
+  @apply text-[11px] font-semibold uppercase tracking-[0.09em] text-ink-muted;
+}
+
+/* Decorative hairline that trails a section label. Carries no text, so it
+   never leaks into the heading's accessible name. */
+.label-rule {
+  @apply h-px flex-1 bg-line;
+}
+
+/* A heap object's identity, wherever it appears: on a stack variable, inside a
+   field, or on the card itself. Same shape every time, so the eye matches them
+   without needing an arrow drawn between them. */
+.id-badge {
+  @apply inline-flex items-center rounded-[5px] border px-1.5 py-px font-mono text-[11px] font-medium tracking-tight tabular-nums;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-1.5 rounded-lg border text-sm font-medium transition
+         duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/35
+         focus-visible:ring-offset-1 focus-visible:ring-offset-canvas
+         disabled:cursor-not-allowed disabled:opacity-40;
+}
+
+.btn-primary {
+  @apply border-transparent bg-accent text-white shadow-sm
+         enabled:hover:bg-accent-hover enabled:active:translate-y-px;
+}
+
+.btn-secondary {
+  @apply border-line bg-surface text-ink-muted
+         enabled:hover:border-line-strong enabled:hover:bg-sunken enabled:hover:text-ink
+         enabled:active:translate-y-px;
+}
+
+.kbd {
+  @apply inline-flex min-w-[1.4rem] items-center justify-center rounded border border-line
+         bg-surface px-1 py-px font-mono text-[11px] leading-5 text-ink-muted shadow-[0_1px_0_var(--color-line)];
+}
+
+/* ------------------------------------------------------------------ motion */
+
+/*
+ * Motion exists here to show causality, never to decorate:
+ *   flash  — this value was just written
+ *   spawn  — this object was just allocated
+ * Both are short, both are load-bearing.
+ */
+
+@keyframes value-flash {
+  0% {
+    opacity: 0.55;
+  }
+  55% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes object-spawn {
+  from {
+    opacity: 0;
+    transform: translateY(3px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes step-fade {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * The flash is an overlay that fades out, not an animated background. The
+ * element keeps its own soft-amber "changed on this step" styling underneath;
+ * the pulse is only the moment of arrival. Animating background-color directly
+ * would end on `transparent` and wipe that resting state out from under it.
+ */
+.flash {
+  position: relative;
+}
+
+.flash::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--color-mutation);
+  mix-blend-mode: multiply;
+  opacity: 0;
+  animation: value-flash 1100ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.spawn {
+  animation: object-spawn 260ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.step-fade {
+  animation: step-fade 200ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flash,
+  .spawn,
+  .step-fade {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 1ms !important;
+  }
 }

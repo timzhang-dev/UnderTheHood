@@ -14,20 +14,27 @@ export default function ExecutionControls({
   const atStart = current === 0;
   const atEnd = current === total - 1;
 
-  const button =
-    "rounded-md border px-4 py-2 text-sm font-medium transition enabled:hover:bg-slate-50 " +
-    "disabled:cursor-not-allowed disabled:opacity-40 border-slate-300 bg-white text-slate-700";
-
   return (
-    <div className="flex items-center justify-center gap-4">
-      <button className={button} onClick={onPrevious} disabled={atStart}>
-        ← Previous
+    <div className="flex items-center justify-center gap-3">
+      <button
+        className="btn btn-secondary px-3.5 py-2"
+        onClick={onPrevious}
+        disabled={atStart}
+      >
+        <span aria-hidden>←</span> Previous
       </button>
-      <span className="min-w-28 text-center text-sm tabular-nums text-slate-600">
-        Step <strong className="text-slate-900">{current + 1}</strong> / {total}
+      {/* Tabular numerals so the counter does not twitch as the step advances. */}
+      <span className="min-w-28 text-center font-mono text-xs tabular-nums text-ink-muted">
+        Step <strong className="font-semibold text-ink">{current + 1}</strong>
+        <span className="mx-0.5 text-ink-faint">/</span>
+        {total}
       </span>
-      <button className={button} onClick={onNext} disabled={atEnd}>
-        Next →
+      <button
+        className="btn btn-secondary px-3.5 py-2"
+        onClick={onNext}
+        disabled={atEnd}
+      >
+        Next <span aria-hidden>→</span>
       </button>
     </div>
   );

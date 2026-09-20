@@ -70,20 +70,24 @@ export default function Home() {
     return (
       <main className="mx-auto max-w-6xl px-4 py-8">
         <header className="mb-6 flex items-center justify-between gap-4">
-          <h1 className="text-lg font-semibold text-slate-900">ExplainMyCode</h1>
+          {/* Monospace wordmark: the product's whole subject is program state,
+              and the mono face is where its personality lives. */}
+          <h1 className="font-mono text-[15px] font-semibold tracking-tight text-ink">
+            ExplainMyCode
+          </h1>
           <button
             onClick={() => setSteps(null)}
-            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            className="btn btn-secondary px-3 py-1.5 text-[13px]"
           >
-            ← Edit code
+            <span aria-hidden>←</span> Edit code
           </button>
         </header>
 
         <div className="grid gap-6 lg:grid-cols-2">
           <CodePanel source={code} activeLine={step.line} />
           <div className="space-y-5">
-            <StackView frames={step.stackFrames} colors={colors} changed={step.changed} />
-            <HeapView heap={step.heap} colors={colors} changed={step.changed} />
+            <StackView frames={step.stackFrames} colors={colors} changed={step.changed} stepKey={current} />
+            <HeapView heap={step.heap} colors={colors} changed={step.changed} stepKey={current} />
           </div>
         </div>
 
@@ -94,8 +98,8 @@ export default function Home() {
             onPrevious={goPrevious}
             onNext={goNext}
           />
-          <p className="mt-2 text-center text-xs text-slate-400">
-            Use ← and → to step
+          <p className="mt-2.5 flex items-center justify-center gap-1.5 text-center text-xs text-ink-faint">
+            Use <kbd className="kbd">←</kbd> and <kbd className="kbd">→</kbd> to step
           </p>
         </div>
 
@@ -112,10 +116,10 @@ export default function Home() {
   // ------------------------------------------------------------------ input
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
-      <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+      <h1 className="text-3xl font-semibold tracking-[-0.02em] text-ink sm:text-[2.5rem] sm:leading-[1.1]">
         See what your Java code is actually doing.
       </h1>
-      <p className="mt-3 text-base text-slate-600">
+      <p className="mt-3.5 max-w-xl text-[15px] leading-relaxed text-ink-muted">
         Step through your code and visualize variables, objects, references,
         arrays, and memory.
       </p>
@@ -130,12 +134,13 @@ export default function Home() {
           onChange={(e) => setCode(e.target.value)}
           spellCheck={false}
           rows={14}
-          className="w-full resize-y rounded-lg border border-slate-300 bg-white p-4 font-mono text-sm leading-6 text-slate-800 shadow-sm focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+          className="w-full resize-y rounded-[10px] border border-line bg-surface p-4 font-mono text-[13px] leading-6 text-ink shadow-sm transition
+                     placeholder:text-ink-faint focus:border-accent-line focus:outline-none focus:ring-2 focus:ring-accent/20"
         />
       </div>
 
       {notice && (
-        <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="mt-4 rounded-[10px] border border-danger-line bg-danger-soft px-4 py-3 text-sm leading-relaxed text-danger">
           {notice}
         </div>
       )}
@@ -143,16 +148,17 @@ export default function Home() {
       <button
         onClick={() => onVisualize(code)}
         disabled={loading || code.trim().length === 0}
-        className="mt-4 w-full rounded-lg bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+        className="btn btn-primary mt-4 w-full px-5 py-2.5 font-semibold sm:w-auto"
       >
         {loading ? "Working…" : "Visualize Code"}
       </button>
 
-      <section className="mt-10">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <section className="mt-12">
+        <h2 className="label flex items-center gap-3">
           Examples
+          <span className="label-rule" aria-hidden />
         </h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div className="mt-3.5 grid gap-3 sm:grid-cols-2">
           {EXAMPLES.map((example) => (
             <button
               key={example.id}
@@ -160,12 +166,14 @@ export default function Home() {
                 setCode(example.source);
                 setNotice(null);
               }}
-              className="rounded-lg border border-slate-200 bg-white p-4 text-left transition hover:border-slate-400 hover:shadow-sm"
+              className="group rounded-[10px] border border-line bg-surface p-4 text-left transition duration-150
+                         hover:-translate-y-px hover:border-line-strong hover:shadow-[0_2px_8px_-2px_rgb(21_21_28_/_0.10)]
+                         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/35"
             >
-              <span className="block text-sm font-semibold text-slate-900">
+              <span className="block text-sm font-semibold text-ink transition-colors group-hover:text-accent">
                 {example.title}
               </span>
-              <span className="mt-1 block text-xs leading-relaxed text-slate-600">
+              <span className="mt-1 block text-xs leading-relaxed text-ink-muted">
                 {example.teaches}
               </span>
             </button>

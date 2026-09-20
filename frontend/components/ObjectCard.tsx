@@ -7,21 +7,24 @@ export default function ObjectCard({
   color,
   colors,
   changed,
+  stepKey = 0,
 }: {
   entry: ObjectEntry;
   color: HeapColor;
   colors: Map<string, HeapColor>;
   changed: Changed | null;
+  stepKey?: number;
 }) {
   return (
-    <div className={`overflow-hidden rounded-lg border bg-white ${color.border}`}>
-      <div className={`flex items-baseline gap-2 border-b px-3 py-1.5 ${color.border} ${color.header}`}>
-        <span className={`font-mono text-xs font-semibold ${color.title}`}>
-          {entry.id}
-        </span>
-        <span className="font-mono text-xs text-slate-500">{entry.type}</span>
+    // `spawn` fires on mount only, and cards are keyed by heap id — so the
+    // animation plays exactly when the object is allocated, and never again.
+    <div className="panel spawn relative">
+      <span aria-hidden className={`absolute inset-y-0 left-0 w-[3px] ${color.rail}`} />
+      <div className={`flex items-baseline gap-2 border-b border-line px-3.5 py-2 ${color.header}`}>
+        <span className={`id-badge ${color.chip}`}>{entry.id}</span>
+        <span className="font-mono text-[11px] text-ink-faint">{entry.type}</span>
       </div>
-      <ul className="divide-y divide-slate-100">
+      <ul className="divide-y divide-line/70">
         {entry.fields.map((field) => {
           const highlighted =
             changed?.kind === "field" &&
@@ -29,12 +32,14 @@ export default function ObjectCard({
             changed.field === field.name;
           return (
             <li
-              key={field.name}
-              className={`flex items-center justify-between gap-4 px-3 py-2 ${
-                highlighted ? "bg-amber-50 ring-1 ring-inset ring-amber-300" : ""
+              key={highlighted ? `${field.name}@${stepKey}` : field.name}
+              className={`flex items-center justify-between gap-4 px-3.5 py-2 ${
+                highlighted
+                  ? "flash bg-mutation-soft ring-1 ring-inset ring-mutation-line"
+                  : ""
               }`}
             >
-              <span className="font-mono text-sm text-slate-600">{field.name}</span>
+              <span className="font-mono text-[13px] text-ink-muted">{field.name}</span>
               <ValueChip value={field.value} colors={colors} />
             </li>
           );

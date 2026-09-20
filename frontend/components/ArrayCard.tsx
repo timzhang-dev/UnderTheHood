@@ -7,42 +7,54 @@ export default function ArrayCard({
   color,
   colors,
   changed,
+  stepKey = 0,
 }: {
   entry: ArrayEntry;
   color: HeapColor;
   colors: Map<string, HeapColor>;
   changed: Changed | null;
+  stepKey?: number;
 }) {
+  const last = entry.elements.length - 1;
+
   return (
-    <div className={`overflow-hidden rounded-lg border bg-white ${color.border}`}>
-      <div className={`flex items-baseline gap-2 border-b px-3 py-1.5 ${color.border} ${color.header}`}>
-        <span className={`font-mono text-xs font-semibold ${color.title}`}>
-          {entry.id}
-        </span>
-        <span className="font-mono text-xs text-slate-500">{entry.type}</span>
+    <div className="panel spawn relative">
+      <span aria-hidden className={`absolute inset-y-0 left-0 w-[3px] ${color.rail}`} />
+      <div className={`flex items-baseline gap-2 border-b border-line px-3.5 py-2 ${color.header}`}>
+        <span className={`id-badge ${color.chip}`}>{entry.id}</span>
+        <span className="font-mono text-[11px] text-ink-faint">{entry.type}</span>
       </div>
       {/* Indices sit under the cells: beginners need to see that b[0] is a slot,
-          not a name. Horizontal scroll keeps long arrays from breaking layout. */}
-      <div className="overflow-x-auto p-3">
-        <div className="flex gap-1">
+          not a name. Cells share borders so the array reads as one contiguous
+          block of memory rather than a row of loose chips. Horizontal scroll
+          keeps long arrays from breaking layout. */}
+      <div className="overflow-x-auto px-3.5 py-3">
+        <div className="flex">
           {entry.elements.map((element, index) => {
             const highlighted =
               changed?.kind === "element" &&
               changed.id === entry.id &&
               changed.index === index;
             return (
-              <div key={index} className="flex flex-col items-center gap-1">
+              <div
+                key={highlighted ? `${index}@${stepKey}` : index}
+                className={`flex flex-col items-center gap-1 ${index > 0 ? "-ml-px" : ""}`}
+              >
                 <div
                   data-testid="array-cell"
-                  className={`flex h-10 min-w-12 items-center justify-center rounded border px-2 ${
+                  className={`relative flex h-10 min-w-12 items-center justify-center border px-2.5 transition-colors duration-200 ${
+                    index === 0 ? "rounded-l-md" : ""
+                  } ${index === last ? "rounded-r-md" : ""} ${
                     highlighted
-                      ? "border-amber-400 bg-amber-50 ring-1 ring-amber-300"
-                      : "border-slate-200 bg-slate-50"
+                      ? "z-10 border-mutation-line bg-mutation-soft flash"
+                      : "border-line bg-sunken/50"
                   }`}
                 >
                   <ValueChip value={element} colors={colors} />
                 </div>
-                <span className="font-mono text-[10px] text-slate-400">{index}</span>
+                <span className="font-mono text-[10px] tabular-nums text-ink-faint">
+                  {index}
+                </span>
               </div>
             );
           })}
