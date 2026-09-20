@@ -13,22 +13,16 @@ Credentials: copy .env.example to .env and set ANTHROPIC_API_KEY. Nothing here l
 .env by itself; `--env-file .env` is what makes uv do it. --dry-run and --replay
 need no key.
 
+It calls the same llm.ask the app uses, but only for the model's FIRST attempt. The
+app adds one repair retry on top (trace_generator.generate_trace), so this is the
+pessimistic view, which is what you want when tuning the prompt.
+
 For a built-in example the model's trace is also compared with the hand-authored
 golden trace. Only state is compared (line, stack, heap, stdout); explanations are
 prose and are expected to differ.
 
 --replay analyses a saved trace instead of calling the API. It lets you re-inspect
 a run made earlier with --out, and it makes the reporting testable for free.
-
-Two output shapes, because the spike never answered whether the model can return
-`unsupported` at all:
-
-  --shape wrapped   asks for {"result": <ok | unsupported>} (default)
-  --shape ok        asks for a bare TraceOk, as the spike did; cannot express
-                    `unsupported`
-
-If the API rejects `wrapped`, fall back to `ok`. The worked example in the prompt
-shows the bare shape, so if `wrapped` wins, update the example to match.
 """
 
 from __future__ import annotations
@@ -40,29 +34,19 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import anthropic
 from pydantic import TypeAdapter
 
-from app.models.execution import Strict, TraceOk, TraceUnsupported, VisualizeResponse
+from app.models.execution import TraceOk, TraceUnsupported, VisualizeResponse
 from app.prompts.execution_trace import SYSTEM_PROMPT, build_user_message
+from app.services.llm import MODEL, TraceServiceError, UnusableOutput, ask
 from app.services.validator import validate_trace
 
 FIXTURES = Path(__file__).resolve().parents[2] / "fixtures"
 RESPONSE = TypeAdapter(VisualizeResponse)
 
-# Thinking tokens count against this, and a trace near STEP_CAP is large. If a long
-# program dies here, that is a finding about the cap, not a bug in the harness.
-MAX_TOKENS = 16000
-
 # State that must match the golden trace. `source` is derived from `line`, and
 # `explanation` / `changed` are judgement calls, so none of those are compared.
 STATE_FIELDS = ("line", "stackFrames", "heap", "stdout")
-
-
-class Envelope(Strict):
-    """Wraps the union in an object: a bare union at the schema root may be rejected."""
-
-    result: VisualizeResponse
 
 
 # --------------------------------------------------------------------------
@@ -88,63 +72,25 @@ def load_replay(path: str) -> TraceOk | TraceUnsupported:
 # --------------------------------------------------------------------------
 
 
-def ask_model(client: anthropic.Anthropic, model: str, source: str, shape: str):
-    """Returns a TraceOk / TraceUnsupported, or None if the call did not produce one."""
-    output_format = Envelope if shape == "wrapped" else TraceOk
+def ask_model(model: str, source: str) -> TraceOk | TraceUnsupported | None:
+    """Returns the model's answer, or None if the call did not produce one."""
     try:
-        response = client.messages.parse(
-            model=model,
-            max_tokens=MAX_TOKENS,
-            # cache_control makes the cache counters below meaningful: run the same
-            # command twice within five minutes and cache_read should be non-zero.
-            system=[{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
-            messages=[{"role": "user", "content": build_user_message(source)}],
-            output_format=output_format,
-        )
-    except anthropic.BadRequestError as exc:
-        print(f"REJECTED by the API (400): {exc.message}")
-        if shape == "wrapped":
-            print("-> The wrapped shape may be the problem. Retry with --shape ok.")
-        else:
-            print("-> The trace schema itself was rejected; see the fallback in spike_structured_output.py.")
+        reply = ask([{"role": "user", "content": build_user_message(source)}], model=model)
+    except TraceServiceError as exc:
+        print(f"SERVICE ERROR: {exc}  (details are in the log above)")
         return None
-    except anthropic.AuthenticationError:
-        print("Authentication failed. Set ANTHROPIC_API_KEY, or run `ant auth login`.")
-        return None
-    except anthropic.RateLimitError:
-        print("Rate limited. Wait a moment and retry.")
-        return None
-    except anthropic.APIStatusError as exc:
-        print(f"API error ({exc.status_code}): {exc.message}")
-        return None
-    except anthropic.APIConnectionError:
-        print("Network error reaching the API.")
-        return None
-    except TypeError as exc:
-        # With no credential at all the SDK raises a bare TypeError, not AuthenticationError.
-        if "authentication" not in str(exc).lower():
-            raise
-        print(
-            "No credentials found. Put ANTHROPIC_API_KEY in backend/.env and run with "
-            "`uv run --env-file .env ...`, or run `ant auth login`."
-        )
-        return None
-    except Exception as exc:  # noqa: BLE001 - last resort for a dev script
-        # Most likely the SDK failing to parse output that was cut off at max_tokens.
-        print(f"{type(exc).__name__}: {exc}")
-        print(f"-> If the program is long, the output may have hit max_tokens ({MAX_TOKENS}).")
+    except UnusableOutput as exc:
+        print(f"UNUSABLE OUTPUT: {exc}")
+        print("-> If the program is long, the trace may have hit max_tokens.")
         return None
 
-    u = response.usage
+    u = reply.usage
     print(
-        f"request {response._request_id}  stop_reason={response.stop_reason}\n"
+        f"request {reply.request_id}  stop_reason={reply.stop_reason}\n"
         f"tokens: in={u.input_tokens} out={u.output_tokens} "
         f"cache_write={u.cache_creation_input_tokens} cache_read={u.cache_read_input_tokens}"
     )
-    if response.parsed_output is None:
-        print(f"No parsed output (stop_reason={response.stop_reason}).")
-        return None
-    return response.parsed_output.result if shape == "wrapped" else response.parsed_output
+    return reply.result
 
 
 # --------------------------------------------------------------------------
@@ -234,8 +180,7 @@ def main() -> int:
     what.add_argument("--example", choices=names, help="a built-in example (compared with its golden trace)")
     what.add_argument("--all-examples", action="store_true", help="every built-in example")
     what.add_argument("--file", help="a .java file")
-    parser.add_argument("--model", default="claude-opus-5")
-    parser.add_argument("--shape", choices=["wrapped", "ok"], default="wrapped")
+    parser.add_argument("--model", default=MODEL)
     parser.add_argument("--out", help="save the resulting trace JSON here (single program only)")
     parser.add_argument("--replay", help="analyse this saved trace instead of calling the API")
     parser.add_argument("--dry-run", action="store_true", help="print what would be sent; no API call")
@@ -251,15 +196,14 @@ def main() -> int:
     else:
         work = [(args.file, Path(args.file).read_text(), None)]
 
-    client = None if (args.dry_run or args.replay) else anthropic.Anthropic()
     passed = 0
     for name, source, golden in work:
         print(f"\n{'=' * 72}\n{name}\n{'=' * 72}")
         if args.dry_run:
-            print(f"system prompt: {len(SYSTEM_PROMPT)} chars (~{len(SYSTEM_PROMPT) // 4} tokens)\n")
+            print(f"system prompt: {len(SYSTEM_PROMPT)} chars\n")
             print(build_user_message(source))
             continue
-        result = load_replay(args.replay) if args.replay else ask_model(client, args.model, source, args.shape)
+        result = load_replay(args.replay) if args.replay else ask_model(args.model, source)
         if result is None:
             continue
         if args.out:
